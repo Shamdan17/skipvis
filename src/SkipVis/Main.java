@@ -44,6 +44,28 @@ public class Main extends Application{
      */
     private double maxButtonsize=40;
 
+    /*
+     * The method used to initialize the SkipGraph.
+     * 0 = Do not initialize it (add everything manually)
+     * 1 = Initialize it with a lookup table
+     * 2 = Initialize it with a config file (Refer to this: https://github.com/NazirNayal8/LightChain/blob/master/SkipGraphNode/src/remoteTest/Configuration.java)
+     */
+
+    private final int readSetting = 2;
+
+    /*
+     * Number of bits to initialize the graph with: (0 will make it automatic based on the first entry of whatever you do)
+     */
+    private final int defNumBits = 0;
+
+    /*
+     * Default paths for lookup table and/or config file:
+     */
+    private final String lookupPath = "lineup.txt";
+    private final String configPath = "node.conf";
+    private SkipNodeDatabase db;
+
+
     /**
      * Main start method of the program.
      *
@@ -65,9 +87,8 @@ public class Main extends Application{
 
         //Read from plaintext file and configure SkipNodeDatabase
         SkipNodeDatabase db1= new SkipNodeDatabase();
-        db1.read("lineup.txt",3);
+        init(db1);
         try{
-
             /*find the longest string in NameId,NumericalId among all of the nodes
             in order to determine the button size that will be used to
             represent a node. This block is necessary for proper alignment.*/
@@ -112,6 +133,26 @@ public class Main extends Application{
 
 
     public static void main(String[] args) {launch(args);}
+
+
+    /*
+     * Initializes the SkipGraph based on whatever readSetting is chosen.
+     * @param db: The database of the SkipGraph to initialize.
+     * @return This method returns nothing, but exits the program if the settings are not correct.
+     */
+    private void init(SkipNodeDatabase db){
+        if(readSetting == 1){
+            db.readLookup(lookupPath,defNumBits);
+        }else if(readSetting == 2){
+            db.readConfig(configPath,defNumBits);
+        }else{
+            if(readSetting!=0) System.err.println("Unknown read setting. Please double check the setting and try again.");
+        }
+    }
+
+
+
+
 
     /**
      *Puts everything that is necessary for the visualization and controlling the visualization on the scene.
@@ -174,15 +215,9 @@ public class Main extends Application{
         add.setOnAction((ActionEvent e) -> {
             try {
                 //get the text in numerical ID field
-                String num=numID.getText();
-                String numericalID="";
-                for(int i=0;i<num.length();i++){
-                    if (isNumeric(num.charAt(i))){
-                        numericalID+=Character.toString(num.charAt(i));
-                        }
-                }
-                String finalNumericalID = numericalID;
-                if(!finalNumericalID.equals("") && finalNumericalID.length() == num.length()){ //checking for whether it is null or not is not sufficient we should check for its length
+
+                String finalNumericalID = numID.getText().trim();
+                if(!finalNumericalID.equals("")){ //checking for whether it is null or not is not sufficient we should check for its length
                     SkipNode added = new SkipNode(namID.getText(), Integer.parseInt(finalNumericalID));
                     try {
                         db.insert(added);
@@ -203,10 +238,9 @@ public class Main extends Application{
                 }else{
                     System.err.println("Error in numericalID field");
                 }
-            }catch (InvalidIDException e1) {
+            }catch (NumberFormatException e1) {
                 System.err.println("NumericalID has to be a number");
             }
-
         });
 
         //add those textfields and buttons to our HBox called "buttons", name might be misleading!
@@ -387,14 +421,6 @@ public class Main extends Application{
         });
         return node;
 
-    }
-
-    public boolean isNumeric(char a){
-        boolean digit=false;
-        if (a=='0'||a=='1'||a=='2'||a=='3'||a=='4'||a=='5'||a=='6'||a=='7'||a=='8'||a=='9'){
-            digit=true;
-        }
-        return digit;
     }
 
 }

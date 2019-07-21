@@ -53,15 +53,7 @@ public class SkipNode extends Node {
     private boolean[] checked;//this array is  in nextLayer()
 
     //Constructor
-    public SkipNode(String name, int num) throws InvalidIDException{//bits represent the number of bits in a node's nameID
-
-        for(int i=0;i<(num+"").length();i++){
-            if(!isNumeric((num+"").charAt(i))){
-                throw new InvalidIDException(num+"");
-            }
-        }
-
-
+    public SkipNode(String name, int num){//bits represent the number of bits in a node's nameID
         NameID = name;
         NumberID = num;
         int bits=name.length();
@@ -71,7 +63,6 @@ public class SkipNode extends Node {
         leftNode=new SkipNode[bits];
         rightNode=new SkipNode[bits];
         checked=new boolean[bits];
-
     }
 
     //Getters &setters

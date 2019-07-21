@@ -1,8 +1,11 @@
 package SkipVis;
 import Exceptions.*;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.io.File;
+import Configuration.Configuration;
+import sun.security.krb5.Config;
 
 /**
  * Represents the architecture of the Skip Graph
@@ -23,7 +26,7 @@ public class SkipNodeDatabase {
         databaseArray=new SkipNode[20];
     }
     public SkipNodeDatabase(){
-        this.bits=4;
+        this.bits=0;
         databaseArray=new SkipNode[20];
     }
     //getters & setters
@@ -54,7 +57,7 @@ public class SkipNodeDatabase {
      * @param bits:each node will have #bits many left and right neighbors
      * @return: if the file was successfully read, return true
      */
-    public boolean read(String fileName, int bits){//reads documents that only contain the lookup tables for each node
+    public boolean readLookup(String fileName, int bits){//reads documents that only contain the lookup tables for each node
         Scanner s;
         setBits(bits);
         try {
@@ -65,28 +68,43 @@ public class SkipNodeDatabase {
         }
         int m=0;
         while (s.hasNext()&& m<size()){
-            try{
-                SkipNode sn=new SkipNode(s.next(),s.nextInt());//this function uses NumericIDs as representatives of its left and right nodes
-                try {
-                    //put(sn, m);
-                    insert(sn);
-                }catch(BitMissMatchException b){
-                    System.err.println("BitMissMatchException");
-                }
-                for(int j=0; j<getBits();j++){
-                    get(m).setLeft(j,s.nextInt());
-                    get(m).setRight(j,s.nextInt());
-                }
-                m++;
-            }catch (InvalidIDException e2){
-                System.err.println("InvalidID Exception! please check lineup file");
-                return false;
+            SkipNode sn=new SkipNode(s.next(),s.nextInt());//this function uses NumericIDs as representatives of its left and right nodes
+            if(getBits() == 0) setBits(sn.getNameID().length());
+            try {
+                //put(sn, m);
+                insert(sn);
+            }catch(BitMissMatchException b){
+                System.err.println("BitMissMatchException");
             }
-
+            for(int j=0; j<getBits();j++){
+                get(m).setLeft(j,s.nextInt());
+                get(m).setRight(j,s.nextInt());
+            }
+            m++;
         }
-
-
         s.close();
+        return true;
+    }
+
+
+    /**
+     *  this function sets up a database from a lookup table that fileName will provide
+     * @param fileName: Sting fileName is where the information that is to be read is stored
+     * @param bits:each node will have #bits many left and right neighbors
+     * @return: if the file was successfully read, return true
+     */
+    public boolean readConfig(String fileName, int bits) {//reads documents that only contain the lookup tables for each node
+        ArrayList<Configuration> cnfs = Configuration.parseConfigurations();
+        setBits(cnfs.get(0).getNameID().length());
+
+        for(Configuration cur : cnfs){
+            SkipNode sn = new SkipNode(cur.getNameID(),Integer.parseInt(cur.getNumID()));
+            try{
+                insert(sn);
+            }catch(BitMissMatchException e){
+                System.err.println("BitMissmatch exception in reading configuration files.");
+            }
+        }
         return true;
     }
 
@@ -150,6 +168,9 @@ public class SkipNodeDatabase {
     public boolean insert(SkipNode sn) throws BitMissMatchException{
         SkipNode tempPrev;
         SkipNode tempNext;
+        if(getBits() == 0){
+            setBits(sn.getNameID().length());
+        }
         boolean placed=false;
         int level=0;
         if (sn.getNameID().length()!=getBits()){
